@@ -1,0 +1,238 @@
+- table:
+    schema: public
+    name: containers
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      updated_at: updatedAt
+      project_id: projectId
+  object_relationships:
+  - name: project
+    using:
+      foreign_key_constraint_on: project_id
+  array_relationships:
+  - name: variables
+    using:
+      foreign_key_constraint_on:
+        column: container_id
+        table:
+          schema: public
+          name: variables
+- table:
+    schema: public
+    name: files
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      original_name: originalName
+      updated_at: updatedAt
+      created_at: createdAt
+- table:
+    schema: public
+    name: gallery
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      project_id: projectId
+- table:
+    schema: public
+    name: gallery_file
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      file_id: fileId
+      gallery_id: galleryId
+  object_relationships:
+  - name: file
+    using:
+      foreign_key_constraint_on: file_id
+  - name: gallery
+    using:
+      foreign_key_constraint_on: gallery_id
+- table:
+    schema: public
+    name: geometric_objects
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      updated_at: updatedAt
+      project_id: projectId
+      created_at: createdAt
+- table:
+    schema: public
+    name: models
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      file_id: fileId
+  object_relationships:
+  - name: file
+    using:
+      foreign_key_constraint_on: file_id
+  - name: gltfProject
+    using:
+      foreign_key_constraint_on:
+        column: gltf_model_id
+        table:
+          schema: public
+          name: projects
+  - name: hdf5Project
+    using:
+      foreign_key_constraint_on:
+        column: hdf5_model_id
+        table:
+          schema: public
+          name: projects
+- table:
+    schema: public
+    name: plot_object
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      plot_id: plotId
+      variable_object_id: variableObjectId
+  object_relationships:
+  - name: plot
+    using:
+      foreign_key_constraint_on: plot_id
+  - name: variable_object
+    using:
+      foreign_key_constraint_on: variable_object_id
+- table:
+    schema: public
+    name: plots
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      variable_id: variableId
+      updated_at: updatedAt
+      project_id: projectId
+      created_at: createdAt
+  object_relationships:
+  - name: variable
+    using:
+      foreign_key_constraint_on: variable_id
+  array_relationships:
+  - name: plot_objects
+    using:
+      foreign_key_constraint_on:
+        column: plot_id
+        table:
+          schema: public
+          name: plot_object
+- table:
+    schema: public
+    name: project_user
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      project_id: projectId
+      user_id: userId
+- table:
+    schema: public
+    name: projects
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      project_owner: projectOwner
+      gltf_model_id: gltfModelId
+      updated_at: updatedAt
+      created_at: createdAt
+      hdf5_model_id: hdf5ModelId
+      project_status: projectStatus
+  object_relationships:
+  - name: gallery
+    using:
+      foreign_key_constraint_on:
+        column: project_id
+        table:
+          schema: public
+          name: gallery
+  - name: gltfModel
+    using:
+      foreign_key_constraint_on: gltf_model_id
+  - name: hdf5Model
+    using:
+      foreign_key_constraint_on: hdf5_model_id
+  - name: user
+    using:
+      foreign_key_constraint_on: project_owner
+  array_relationships:
+  - name: containers
+    using:
+      foreign_key_constraint_on:
+        column: project_id
+        table:
+          schema: public
+          name: containers
+- table:
+    schema: public
+    name: samples
+  object_relationships:
+  - name: variable_object
+    using:
+      foreign_key_constraint_on:
+        column: sample_id
+        table:
+          schema: public
+          name: variable_object
+- table:
+    schema: public
+    name: users
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      activated_at: activatedAt
+      updated_at: updatedAt
+      created_at: createdAt
+- table:
+    schema: public
+    name: variable_object
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      sample_id: sampleId
+      object_id: objectId
+      variable_id: variableId
+  object_relationships:
+  - name: geometric_object
+    using:
+      foreign_key_constraint_on: object_id
+  - name: sample
+    using:
+      foreign_key_constraint_on: sample_id
+  - name: variable
+    using:
+      foreign_key_constraint_on: variable_id
+- table:
+    schema: public
+    name: variables
+  configuration:
+    custom_root_fields: {}
+    comment: null
+    custom_column_names:
+      container_id: containerId
+  object_relationships:
+  - name: container
+    using:
+      foreign_key_constraint_on: container_id
+  array_relationships:
+  - name: variable_objects
+    using:
+      foreign_key_constraint_on:
+        column: variable_id
+        table:
+          schema: public
+          name: variable_object

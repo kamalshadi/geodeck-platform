@@ -1,0 +1,153 @@
+version: '3.7'
+services:
+  api:
+    ports:
+      - 8000:8000
+    build:
+      context: ./geodeck-app-backend
+      dockerfile: ./Dockerfile
+      args:
+        STATIC_URL: "/static/"
+    restart: always
+    depends_on:
+      - graphql-engine
+      - redis
+    volumes:
+      - ./geodeck-app-backend/:/usr/src/app
+      - /usr/src/app/node_modules
+      # shared volume between worker and api for media
+      - geodeck-media:/app/media
+    command: npm run start:prod
+    env_file:
+      - common.env
+      - backend.env
+
+  frontend:
+    build:
+      context: ./geodeck-app-frontend
+      dockerfile: ./Dockerfile.dev
+    ports:
+      - 3000:3000
+    restart: always
+    depends_on:
+      - api
+    volumes:
+      - ./geodeck-app-frontend/:/app:cached
+      - /app/node_modules/
+    # Nginx is used to proxy SSR requests thru docker networking
+    command: sh -c '(nginx &) && yarn serve --port 3000 --mode local-dev --host 0.0.0.0'
+
+  db:
+    image: postgres:12-alpine
+    ports:
+      - 5432:5432
+    restart: always
+    volumes:
+      - geodeck-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=geodeck
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      - "db"
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@geodeck.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+  graphql-engine:
+    image: hasura/graphql-engine:v2.3.0.cli-migrations-v3
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    restart: unless-stopped
+    environment:
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://postgres:geodeck@db:5432/postgres
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:geodeck@db:5432/postgres
+      PG_DATABASE_URL: postgres://postgres:geodeck@db:5432/postgres
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "false"
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+    volumes:
+      - ./hasura:/hasura
+      - ./hasura/migrations:/hasura-migrations
+    healthcheck:
+      test: [ "CMD-SHELL", "apt-get update -y && apt-get install -y curl && curl --fail http://localhost:8080/healthz || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  hasura-cli:
+    build:
+      context: ./hasura
+      dockerfile: ./Dockerfile
+    ports:
+      - "9693:9693"
+      - "9695:9695"
+    restart: unless-stopped
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:geodeck@db:5432/postgres
+      HASURA_GRAPHQL_ENDPOINT: http://127.0.0.1:8080
+      HASURA_RUN_CONSOLE: "true"
+    volumes:
+      - ./hasura:/usr/src/hasura
+    depends_on:
+      graphql-engine:
+        condition: service_healthy
+
+  s3:
+    image: minio/minio:RELEASE.2022-03-11T11-08-23Z
+    volumes:
+      - ./storage/minio:/data
+    ports:
+      - "9000:9000"
+    environment:
+      MINIO_ACCESS_KEY: minio_access_key
+      MINIO_SECRET_KEY: minio_secret_key
+    command: server --address 0.0.0.0:9000 /data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - s3
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minio_access_key minio_secret_key;
+      /usr/bin/mc mb myminio/geodeck-gallery-files;
+      /usr/bin/mc mb myminio/geodeck-static-files;
+      /usr/bin/mc mb myminio/geodeck-gltf-files;
+      /usr/bin/mc mb myminio/geodeck-hdf5-files;
+      /usr/bin/mc policy set public myminio/geodeck-gallery-files;
+      /usr/bin/mc policy set public myminio/geodeck-static-files;
+      /usr/bin/mc policy set public myminio/geodeck-gltf-files;
+      /usr/bin/mc policy set public myminio/geodeck-hdf5-files;
+      exit 0;
+      "
+
+  redis:
+    image: library/redis:5.0-alpine
+    ports:
+      - 6379:6379
+    restart: always
+    volumes:
+      - geodeck-redis:/data
+
+volumes:
+  geodeck-db:
+    driver: local
+  geodeck-redis:
+    driver: local
+  geodeck-media:
+  pgadmin-data:
