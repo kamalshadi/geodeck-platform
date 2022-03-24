@@ -106,14 +106,17 @@ services:
     build:
       context: ./geodeck-microservices
       dockerfile: ./Dockerfile.dev
-    volumes:
-      - /data-ingestion:/usr/src/app
-      - /usr/src/app/node_modules
+    restart: unless-stopped
+#    volumes:
+#      - ./data-ingestion:/usr/src/app
+#      - /usr/src/app/node_modules
+    environment:
+      POETRY_VERSION: 1.1.13
     env_file:
       - microservices.env
     depends_on:
       - localstack
-    command: sh -c "npx sls deploy --stage local"
+#    command: sh -c "npx sls deploy --stage local"
 
   localstack:
     image: localstack/localstack:latest
