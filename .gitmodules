@@ -1,0 +1,9 @@
+[submodule "geodeck-app-backend"]
+	path = geodeck-app-backend
+	url = https://github.com/kamalshadi/geodeck-app-backend
+[submodule "geodeck-app-frontend"]
+	path = geodeck-app-frontend
+	url = https://github.com/kamalshadi/geodeck-app-frontend
+[submodule "geodeck-microservices"]
+	path = geodeck-microservices
+	url = https://github.com/kamalshadi/geodeck-microservices
