@@ -102,39 +102,68 @@ services:
       graphql-engine:
         condition: service_healthy
 
-  s3:
-    image: minio/minio:RELEASE.2022-03-11T11-08-23Z
+  microservices:
+    build:
+      context: ./geodeck-microservices
+      dockerfile: ./Dockerfile.dev
     volumes:
-      - ./storage/minio:/data
-    ports:
-      - "9000:9000"
-    environment:
-      MINIO_ACCESS_KEY: minio_access_key
-      MINIO_SECRET_KEY: minio_secret_key
-    command: server --address 0.0.0.0:9000 /data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-  createbuckets:
-    image: minio/mc
+      - /data-ingestion:/usr/src/app
+      - /usr/src/app/node_modules
+    env_file:
+      - microservices.env
     depends_on:
-      - s3
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 minio_access_key minio_secret_key;
-      /usr/bin/mc mb myminio/geodeck-gallery-files;
-      /usr/bin/mc mb myminio/geodeck-static-files;
-      /usr/bin/mc mb myminio/geodeck-gltf-files;
-      /usr/bin/mc mb myminio/geodeck-hdf5-files;
-      /usr/bin/mc policy set public myminio/geodeck-gallery-files;
-      /usr/bin/mc policy set public myminio/geodeck-static-files;
-      /usr/bin/mc policy set public myminio/geodeck-gltf-files;
-      /usr/bin/mc policy set public myminio/geodeck-hdf5-files;
-      exit 0;
-      "
+      - localstack
+    command: sh -c "npx sls deploy --stage local"
+
+  localstack:
+    image: localstack/localstack:latest
+    environment:
+      - EDGE_PORT=4566
+      - LAMBDA_EXECUTOR=local
+      - LAMBDA_REMOTE_DOCKER=0
+      - SERVICES=lambda,cloudformation,s3,sts,iam,apigateway,ecr
+      - HOST_TMP_FOLDER="${TMPDIR:-/tmp}/localstack"
+      - DEFAULT_REGION=us-east-1
+      - DEBUG=1
+    ports:
+      - '4566-4583:4566-4583'
+    volumes:
+      - '${TMPDIR:-/tmp/localstack}:/tmp/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+
+#  s3:
+#    image: minio/minio:RELEASE.2022-03-11T11-08-23Z
+#    volumes:
+#      - ./storage/minio:/data
+#    ports:
+#      - "9000:9000"
+#    environment:
+#      MINIO_ACCESS_KEY: minio_access_key
+#      MINIO_SECRET_KEY: minio_secret_key
+#    command: server --address 0.0.0.0:9000 /data
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+#      interval: 30s
+#      timeout: 20s
+#      retries: 3
+#
+#  createbuckets:
+#    image: minio/mc
+#    depends_on:
+#      - s3
+#    entrypoint: >
+#      /bin/sh -c "
+#      /usr/bin/mc alias set myminio http://minio:9000 minio_access_key minio_secret_key;
+#      /usr/bin/mc mb myminio/geodeck-gallery-files;
+#      /usr/bin/mc mb myminio/geodeck-static-files;
+#      /usr/bin/mc mb myminio/geodeck-gltf-files;
+#      /usr/bin/mc mb myminio/geodeck-hdf5-files;
+#      /usr/bin/mc policy set public myminio/geodeck-gallery-files;
+#      /usr/bin/mc policy set public myminio/geodeck-static-files;
+#      /usr/bin/mc policy set public myminio/geodeck-gltf-files;
+#      /usr/bin/mc policy set public myminio/geodeck-hdf5-files;
+#      exit 0;
+#      "
 
   redis:
     image: library/redis:5.0-alpine
