@@ -106,7 +106,7 @@ services:
     build:
       context: ./geodeck-microservices
       dockerfile: ./Dockerfile.dev
-    restart: unless-stopped
+    restart: on-failure
 #    volumes:
 #      - ./data-ingestion:/usr/src/app
 #      - /usr/src/app/node_modules
@@ -116,13 +116,13 @@ services:
       - microservices.env
     depends_on:
       - localstack
-#    command: sh -c "npx sls deploy --stage local"
+    command: sh -c "npx sls deploy --stage local"
 
   localstack:
     image: localstack/localstack:latest
     environment:
       - EDGE_PORT=4566
-      - LAMBDA_EXECUTOR=local
+      - LAMBDA_EXECUTOR=docker-reuse
       - LAMBDA_REMOTE_DOCKER=0
       - SERVICES=lambda,cloudformation,s3,sts,iam,apigateway,ecr
       - HOST_TMP_FOLDER="${TMPDIR:-/tmp}/localstack"
