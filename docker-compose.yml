@@ -133,6 +133,7 @@ services:
     volumes:
       - '${TMPDIR:-/tmp/localstack}:/tmp/localstack'
       - '/var/run/docker.sock:/var/run/docker.sock'
+      - './aws:/docker-entrypoint-initaws.d'
 
 #  s3:
 #    image: minio/minio:RELEASE.2022-03-11T11-08-23Z
