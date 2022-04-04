@@ -12,6 +12,7 @@ services:
     depends_on:
       - graphql-engine
       - redis
+      - localstack
     volumes:
       - ./geodeck-app-backend/:/usr/src/app
       - /usr/src/app/node_modules
@@ -107,9 +108,9 @@ services:
       context: ./geodeck-microservices
       dockerfile: ./Dockerfile.dev
     restart: on-failure
-#    volumes:
-#      - ./data-ingestion:/usr/src/app
-#      - /usr/src/app/node_modules
+    #    volumes:
+    #      - ./data-ingestion:/usr/src/app
+    #      - /usr/src/app/node_modules
     environment:
       POETRY_VERSION: 1.1.13
     env_file:
@@ -134,40 +135,6 @@ services:
       - '${TMPDIR:-/tmp/localstack}:/tmp/localstack'
       - '/var/run/docker.sock:/var/run/docker.sock'
       - './aws:/docker-entrypoint-initaws.d'
-
-#  s3:
-#    image: minio/minio:RELEASE.2022-03-11T11-08-23Z
-#    volumes:
-#      - ./storage/minio:/data
-#    ports:
-#      - "9000:9000"
-#    environment:
-#      MINIO_ACCESS_KEY: minio_access_key
-#      MINIO_SECRET_KEY: minio_secret_key
-#    command: server --address 0.0.0.0:9000 /data
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-#      interval: 30s
-#      timeout: 20s
-#      retries: 3
-#
-#  createbuckets:
-#    image: minio/mc
-#    depends_on:
-#      - s3
-#    entrypoint: >
-#      /bin/sh -c "
-#      /usr/bin/mc alias set myminio http://minio:9000 minio_access_key minio_secret_key;
-#      /usr/bin/mc mb myminio/geodeck-gallery-files;
-#      /usr/bin/mc mb myminio/geodeck-static-files;
-#      /usr/bin/mc mb myminio/geodeck-gltf-files;
-#      /usr/bin/mc mb myminio/geodeck-hdf5-files;
-#      /usr/bin/mc policy set public myminio/geodeck-gallery-files;
-#      /usr/bin/mc policy set public myminio/geodeck-static-files;
-#      /usr/bin/mc policy set public myminio/geodeck-gltf-files;
-#      /usr/bin/mc policy set public myminio/geodeck-hdf5-files;
-#      exit 0;
-#      "
 
   redis:
     image: library/redis:5.0-alpine
