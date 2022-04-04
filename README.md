@@ -94,5 +94,5 @@ $ docker system prune
 - GeoDeck backend (API) - http://localhost:8000
 - GeoDeck frontend - http://localhost:3000
 - Hasura console - http://localhost:9695
-- Minio (S3) - http://localhost:9000
+- LocalStack (S3, Lambda) - http://localhost:4566
 - PgAdmin - http://localhost:5050
