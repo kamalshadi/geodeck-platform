@@ -117,7 +117,7 @@ services:
       - microservices.env
     depends_on:
       - localstack
-    command: sh -c "npx sls deploy --stage local"
+    command: sh -c "npx sls deploy -c serverless.local.yml --stage local"
 
   localstack:
     image: localstack/localstack:latest
